@@ -1,0 +1,5 @@
+[screener]
+twilio_number = +17895551212
+researcher_number = +14565551212
+researcher_voicemail_timeout = 20
+mandrill_api = abcdefghijklmnop

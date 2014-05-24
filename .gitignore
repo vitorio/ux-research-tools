@@ -54,3 +54,6 @@ docs/_build/
 
 # Configuration
 *.cfg
+
+# PyCharm?
+.idea/

@@ -1,5 +1,6 @@
 from flask import Flask, request, redirect
 import twilio.twiml
+import twilio.rest
 import ConfigParser
 
 config = ConfigParser.ConfigParser()
@@ -8,11 +9,15 @@ twilio_number = config.get('screener', 'twilio_number')
 researcher_number = config.get('screener', 'researcher_number')
 researcher_voicemail_timeout = config.get('screener', 'researcher_voicemail_timeout')
 mandrill_api = config.get('screener', 'mandrill_api')
+twilio_account_sid = config.get('screener', 'twilio_account_sid')
+twilio_auth_token = config.get('screener', 'twilio_auth_token')
+
+twilioclient = twilio.rest.TwilioRestClient(twilio_account_sid, twilio_auth_token)
 
 app = Flask(__name__)
 
-@app.route("/", methods=['GET', 'POST'])
-def hello_monkey():
+@app.route("/incoming-call", methods=['GET', 'POST'])
+def handle_incoming_call():
     """When someone other than me dials in"""
     from_number = request.values.get('From', None)
 
@@ -30,8 +35,27 @@ def hello_monkey():
 
     return str(resp)
 
+@app.route("/incoming-text", methods=['GET', 'POST'])
+def handle_incoming_text():
+    """When someone other than me dials in"""
+    from_number = request.values.get('From', None)
+    sms_body = request.values.get('Body', None)
+
+    if from_number == researcher_number:
+        researcher_text = sms_body.partition(' ')
+        try:
+            message = twilioclient.messages.create(to=researcher_text[0], from_=twilio_number, body=researcher_text[2])
+        except twilio.TwilioRestException as e:
+            message = twilioclient.messages.create(to=researcher_number, from_=twilio_number, body="Error: " + str(e.status) + " " + str(e.code))
+    else:
+        # Forward the message to the researcher
+        message = twilioclient.messages.create(to=researcher_number, from_=twilio_number, body=from_number + " " + sms_body)
+
+    resp = twilio.twiml.Response()
+    return str(resp)
+
 @app.route("/call-researcher", methods=['GET', 'POST'])
-def handle_key():
+def handle_call_researcher():
     """Call my cell"""
 
     dialcallstatus = request.values.get('DialCallStatus', None)
@@ -47,7 +71,7 @@ def handle_key():
         return str(resp)
 
 @app.route("/subject-voicemail", methods=['GET', 'POST'])
-def handle_voicemail():
+def handle_subject_voicemail():
     """Goodbye caller"""
 
     resp = twilio.twiml.Response()

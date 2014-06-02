@@ -1,0 +1,4 @@
+/var/log/twilio-screener.log {
+  copytruncate
+  notifempty
+}

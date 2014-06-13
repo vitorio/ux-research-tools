@@ -2,17 +2,21 @@ from flask import Flask, request, redirect
 import twilio.twiml
 import twilio.rest
 import ConfigParser
+import mandrill
 
 config = ConfigParser.ConfigParser()
 config.readfp(open('screener.cfg'))
 twilio_number = config.get('screener', 'twilio_number')
 researcher_number = config.get('screener', 'researcher_number')
+researcher_email = config.get('screener', 'researcher_email')
 researcher_voicemail_timeout = config.get('screener', 'researcher_voicemail_timeout')
 mandrill_api = config.get('screener', 'mandrill_api')
+mandrill_email = config.get('screener', 'mandrill_email')
 twilio_account_sid = config.get('screener', 'twilio_account_sid')
 twilio_auth_token = config.get('screener', 'twilio_auth_token')
 
 twilioclient = twilio.rest.TwilioRestClient(twilio_account_sid, twilio_auth_token)
+mandrillclient = mandrill.Mandrill(mandrill_api)
 
 app = Flask(__name__)
 
@@ -62,7 +66,7 @@ def handle_call_researcher():
     if (dialcallstatus == "no-answer") or (dialcallstatus == "busy") or (dialcallstatus == "failed"):
         resp = twilio.twiml.Response()
         resp.say("Sorry, all researchers are busy right now. Please leave a message after the tone. Remember to say your name, phone number, and the survey, focus group, or interview you are responding to.  Thank you!")
-        resp.record(maxLength="60", action="/subject-voicemail")
+        resp.record(maxLength="60", action="/subject-voicemail", transcribe=True, transcribeCallback="/subject-transcription")
         resp.say("Sorry, I couldn't hear your message. Please try your call again later.")
         return str(resp)
     else:
@@ -76,6 +80,42 @@ def handle_subject_voicemail():
 
     resp = twilio.twiml.Response()
     resp.say("Thank you for calling. A researcher will return your call soon.  Goodbye.")
+    resp.hangup()
+    return str(resp)
+
+@app.route("/subject-transcription", methods=['GET', 'POST'])
+def handle_subject_transcription():
+    """Notify via email"""
+    from_number = request.values.get('From', None)
+    voicemail = request.values.get('RecordingUrl', None)
+    transcript_status = request.values.get('TranscriptionStatus', None)
+    
+    mail_text = '''You have a new UX screener voicemail from %s.
+
+Recording: %s
+
+''' % ( from_number, voicemail )
+    if (transcript_status == "completed"):
+        mail_text = mail_text + """Transcription:
+
+%s
+""" % request.values.get('TranscriptionText', None)
+    
+    #print mail_text
+    
+    try:
+        message = {'to': [{'email': researcher_email}],
+                   'from_email': mandrill_email,
+                   'subject': 'UX screener voicemail from %s' % from_number,
+                   'text': mail_text}
+        result = mandrillclient.messages.send(message=message)
+    except mandrill.Error, e:
+        print 'A mandrill error occurred: %s - %s' % (e.__class__, e)
+        raise
+    
+    #print result
+    
+    resp = twilio.twiml.Response()
     resp.hangup()
     return str(resp)
 
@@ -95,4 +135,4 @@ def handle_researcher_outbound_result():
     return redirect("/")
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=6000)

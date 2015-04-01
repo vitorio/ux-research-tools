@@ -34,10 +34,17 @@ def handle_incoming_call():
         resp.say("Sorry, I couldn't hear your touch tones. Please try your call again later.")
         resp.hangup()
     else:
-        resp.say("Thanks for your interest in our surveys, focus groups, or interviews. Please hold while we try to connect you with a researcher who can answer your questions.")
+        #resp.say("Thanks for your interest in our surveys, focus groups, or interviews. Please hold while we try to connect you with a researcher who can answer your questions.")
         #resp.play("http://demo.twilio.com/hellomonkey/monkey.mp3")
 
-        resp.dial(researcher_number, action="/call-researcher", method="POST", callerId=twilio_number, timeout=researcher_voicemail_timeout)
+        #resp.dial(researcher_number, action="/call-researcher", method="POST", callerId=twilio_number, timeout=researcher_voicemail_timeout)
+
+        resp.say("Thanks for your interest in our surveys, focus groups, or interviews.")
+        resp.say("Sorry, all researchers are busy right now. Please send a text message, or leave a voice message, with your name, phone number, and the study you're responding to, and a researcher will return your call soon.")
+        resp.record(maxLength="60", action="/subject-voicemail", transcribe=True, transcribeCallback="/subject-transcription")
+        resp.say("Sorry, I couldn't hear your message. Please try your call again later.")
+        return str(resp)
+
 
     return str(resp)
 

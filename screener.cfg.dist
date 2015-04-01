@@ -1,6 +1,8 @@
 [screener]
 twilio_number = +17895551212
 researcher_number = +14565551212
+researcher_inbound_voice_numbers = +14565551212,+11235551212
+researcher_text_numbers = +14565551212,+11235551212
 researcher_email = to_address@example.com
 researcher_voicemail_timeout = 20
 mandrill_api = abcdefghijklmnop

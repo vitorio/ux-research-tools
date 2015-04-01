@@ -8,6 +8,8 @@ config = ConfigParser.ConfigParser()
 config.readfp(open('screener.cfg'))
 twilio_number = config.get('screener', 'twilio_number')
 researcher_number = config.get('screener', 'researcher_number')
+researcher_inbound_voice_numbers = config.get('screener', 'researcher_inbound_voice_numbers').split(',')
+researcher_text_numbers = config.get('screener', 'researcher_text_numbers').split(',')
 researcher_email = config.get('screener', 'researcher_email')
 researcher_voicemail_timeout = config.get('screener', 'researcher_voicemail_timeout')
 mandrill_api = config.get('screener', 'mandrill_api')
@@ -22,11 +24,11 @@ app = Flask(__name__)
 
 @app.route("/incoming-call", methods=['GET', 'POST'])
 def handle_incoming_call():
-    """When someone other than me dials in"""
+    """When someone dials in"""
     from_number = request.values.get('From', None)
 
     resp = twilio.twiml.Response()
-    if from_number == researcher_number:
+    if from_number in researcher_inbound_voice_numbers:
         with resp.gather(action="/researcher-outbound", timeout=30, method="POST") as a:
             a.say("Hello researcher, enter the area code and number to dial followed by pound")
         resp.say("Sorry, I couldn't hear your touch tones. Please try your call again later.")
@@ -41,19 +43,21 @@ def handle_incoming_call():
 
 @app.route("/incoming-text", methods=['GET', 'POST'])
 def handle_incoming_text():
-    """When someone other than me dials in"""
+    """When someone texts in"""
     from_number = request.values.get('From', None)
     sms_body = request.values.get('Body', None)
 
-    if from_number == researcher_number:
+    if from_number in researcher_text_numbers:
         researcher_text = sms_body.partition(' ')
         try:
             message = twilioclient.messages.create(to=researcher_text[0], from_=twilio_number, body=researcher_text[2])
         except twilio.TwilioRestException as e:
-            message = twilioclient.messages.create(to=researcher_number, from_=twilio_number, body="Error: " + str(e.status) + " " + str(e.code))
+            for smsnum in researcher_text_numbers:
+                message = twilioclient.messages.create(to=smsnum, from_=twilio_number, body="Error: " + str(e.status) + " " + str(e.code))
     else:
         # Forward the message to the researcher
-        message = twilioclient.messages.create(to=researcher_number, from_=twilio_number, body=from_number + " " + sms_body)
+        for smsnum in researcher_text_numbers:
+            message = twilioclient.messages.create(to=smsnum, from_=twilio_number, body=from_number + " " + sms_body)
 
     resp = twilio.twiml.Response()
     return str(resp)

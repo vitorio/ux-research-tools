@@ -143,7 +143,7 @@ def handle_researcher_outbound():
 def handle_researcher_outbound_result():
     """Called a subject"""
 
-    return redirect("/")
+    return redirect("/incoming-call")
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=6000)

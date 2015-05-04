@@ -136,7 +136,7 @@ def handle_researcher_outbound():
     subjectnumber = request.values.get('Digits', None)
 
     resp = twilio.twiml.Response()
-    resp.dial(subjectnumber, action="/researcher-outbound-result", method="POST", callerId=twilio_number, hangupOnStar=True)
+    resp.dial(subjectnumber, action="/researcher-outbound-result", method="POST", callerId=twilio_number, hangupOnStar=True, timeout=180)
     return str(resp)
 
 @app.route("/researcher-outbound-result", methods=['GET', 'POST'])

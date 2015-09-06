@@ -239,7 +239,11 @@ def handle_transcription_01_name():
     """When transcription returns, insert it into the survey"""
     sg_survey_id = request.values.get('sgid', None)
     voicemail = request.values.get('RecordingUrl', 'No transcript or recording!')
-    participant_name = request.values.get('TranscriptionText', voicemail)
+    transcript = request.values.get('TranscriptionText', '(blank)')
+    
+    participant_name = voicemail
+    if transcript != "(blank)":
+        participant_name = transcript
     
     payload = {'user:md5': surveygizmo_credentials, '_method': 'POST', 'data[17][value]': participant_name}
     r = requests.get('{}/{}'.format(surveygizmo_surveyresponse, sg_survey_id), params=payload)

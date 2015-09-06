@@ -1,0 +1,12 @@
+[seekorsurvey]
+twilio_number = +15125551212
+researcher_numbers = +17895551212,+19875551212
+researcher_voicemail_timeout = 10
+researcher_email = to_address@example.com
+mandrill_api = abcdefghijklmnop
+mandrill_email = from_address@example.com
+twilio_account_sid = qwertyuiopgfdsa
+twilio_auth_token = zxcvbnmlkjh
+surveygizmo_credentials = surveygizmo@example.com:md5sumofpassword12345
+surveygizmo_surveyresponse = https://restapi.surveygizmo.com/v4/survey/SURVEYIDNUMBER/surveyresponse
+opening_line = Thanks for calling COMPANY NAME about SURVEY NAME.
